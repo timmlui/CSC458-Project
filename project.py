@@ -17,6 +17,7 @@ for ts, pkt in dpkt.pcap.Reader(open(filename,'r')):
     counter+=1
     eth=dpkt.ethernet.Ethernet(pkt) 
     if eth.type!=dpkt.ethernet.ETH_TYPE_IP:
+       print('Ethernet Type: %d\n' % eth.type )
        continue
 
     ip=eth.data
