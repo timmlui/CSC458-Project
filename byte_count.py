@@ -93,26 +93,43 @@ with open('./tracefile8.csv', mode='r') as csv_file:
 
 ip_data = np.sort(ip_length_list)
 yvals_ip =  np.arange(len(ip_data))/float(len(ip_data)-1)
+plt.ylabel('Cumulivitive Probability')
+plt.xlabel('The size of IP packets')
+plt.title("CDF of IP packets")
 plt.plot(ip_data, yvals_ip)
 plt.show()
 
 non_ip_data = np.sort(non_ip_length_list)
 yvals_non_ip =  np.arange(len(non_ip_data))/float(len(non_ip_data)-1)
+plt.ylabel('Cumulivitive Probability')
+plt.xlabel('The size of Non-IP packets')
+plt.title("CDF of Non-IP packets")
 plt.plot(non_ip_data, yvals_non_ip)
 plt.show()
 
 tcp_data = np.sort(tcp_length_list)
 yvals_tcp =  np.arange(len(tcp_data))/float(len(tcp_data)-1)
+plt.ylabel('Cumulivitive Probability')
+plt.xlabel('The size of TCP packets')
+plt.title("CDF of TCP packets")
 plt.plot(tcp_data, yvals_tcp)
 plt.show()
 
 udp_data = np.sort(udp_length_list)
 yvals_udp =  np.arange(len(udp_data))/float(len(udp_data)-1)
+plt.ylabel('Cumulivitive Probability')
+plt.xlabel('The size of UDP packets')
+plt.title("CDF of UDP packets")
+
 plt.plot(udp_data, yvals_udp)
 plt.show()
 
 all_data = np.sort(all_length_list)
 yvals_all =  np.arange(len(all_data))/float(len(all_data)-1)
+plt.ylabel('Cumulivitive Probability')
+plt.xlabel('The size of All packets')
+plt.title("CDF of All packets")
+
 plt.plot(all_data, yvals_all)
 plt.show()
 
