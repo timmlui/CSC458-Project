@@ -28,7 +28,7 @@ all_length_list = []
 # Create a list to store the header size
 udp_header_list = []
 
-with open('./tracefile8.csv', mode='r') as csv_file:
+with open('./univ1_pt8.csv', mode='r') as csv_file:
     csv_reader = csv.DictReader(csv_file)
     line_count = 0
 
@@ -61,6 +61,9 @@ with open('./tracefile8.csv', mode='r') as csv_file:
 
         if row["Protocol"] == "TCP" :
             tcp_total += int(row["Length"])
+            ports = row["Info"].split()
+            print('Source Port:', ports[0], "Destination Port:", ports[2])
+
             tcp_length_list.append(int(row["Length"]))
         if row["Protocol"] == "UDP" :
             udp_total += int(row["Length"])
@@ -70,6 +73,9 @@ with open('./tracefile8.csv', mode='r') as csv_file:
         if row["Protocol"] not in protocol_list:
             other_total += int(row["Length"])
             non_ip_length_list.append(int(row["Length"]))
+
+
+        #========== Per-Flow Statistics ===========
 
         
         # print(f'Source : {row["Source"]} Dest : {row["Destination"]} Length : {row["Length"]}.')
