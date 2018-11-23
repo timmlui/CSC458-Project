@@ -41,18 +41,31 @@ def print_packets(pcap):
     counter=0
 
     eth_counter=0
+    eth_bytes=0
+
     arp_counter=0
+    arp_bytes=0
 
     ipv4_counter=0
+    ipv4_bytes=0
+    
     ipv6_counter=0
+    ipv6_bytes=0
+
     icmp_counter=0
+    icmp_bytes=0
+
     network_other_counter=0
+    network_other_bytes=0
 
     tcp_counter=0
-    udp_counter=0
-    transport_other_counter=0
+    tcp_bytes=0
 
-    not_ip=0
+    udp_counter=0
+    udp_bytes=0
+
+    transport_other_counter=0
+    transport_other_bytes=0
 
     # For each packet in the pcap process the contents
     for timestamp, buf in pcap:
@@ -64,17 +77,25 @@ def print_packets(pcap):
         eth = dpkt.ethernet.Ethernet(buf)
         #print('Ethernet Frame: ', mac_addr(eth.src), mac_addr(eth.dst), eth.type)
 
-        eth_counter+=1
+        eth_counter += 1
 
         if eth.type == dpkt.ethernet.ETH_TYPE_IP:
-            ipv4_counter+=1
+            ipv4_counter += 1
+            ipv4_bytes += eth.data.len
+            eth_bytes += ethLenCheck(eth.data.len)
         elif eth.type == dpkt.ethernet.ETH_TYPE_IP6:
-            ipv6_counter+=1
+            ipv6_counter += 1
+            ipv6_bytes += len(eth.data)
+            eth_bytes += ethLenCheck(len(eth.data))
         elif eth.type == dpkt.ethernet.ETH_TYPE_ARP:
-            arp_counter+=1
+            arp_counter += 1
+            arp_bytes += 64 #fixed size
+            eth_bytes += 64
             continue
         else:
-            network_other_counter+=1
+            network_other_counter += 1
+            network_other_bytes += len(eth.data)
+            eth_bytes += ethLenCheck(len(eth.data))
             continue
 
         # Make sure the Ethernet data contains an IP packet
@@ -87,9 +108,13 @@ def print_packets(pcap):
         # Pulling out src, dst, length, fragment info, TTL, and Protocol
         ip = eth.data
 
+        # Calculating ethernet frame length (eth hdr is 18 bytes)
+        # eth_bytes += ip.len + 18 if ip.len + 18 >= 64 else 64
+
         # Now check if this is an ICMP packet
         if isinstance(ip.data, dpkt.icmp.ICMP):
-            icmp_counter+=1
+            icmp_counter += 1
+            icmp_bytes += 28 #fixed
 
         # Pull out fragment information (flags and offset all packed into off field, so use bitmasks)
         # do_not_fragment = bool(ip.off & dpkt.ip.IP_DF)
@@ -101,43 +126,45 @@ def print_packets(pcap):
         #       (inet_to_str(ip.src), inet_to_str(ip.dst), ip.len, ip.ttl, do_not_fragment, more_fragments, fragment_offset))        
 
         if ip.p == dpkt.ip.IP_PROTO_TCP: 
-            tcp_counter+=1
+            tcp_counter += 1
+            tcp_bytes += ip.len - 40 if ip.len - 40 >= 20 else 0
         elif ip.p == dpkt.ip.IP_PROTO_UDP:
-            udp_counter+=1
+            udp_counter += 1
+            udp_bytes += len(ip.data)
         else:
-            transport_other_counter+=1
+            transport_other_counter += 1
+            transport_other_bytes += len(ip.data)
+
+    print "Total number of packets in the trace file: ", counter
+
+    print "===== Data Link Layer ====="
+    print("Ethernet \t packets: %d | eth/total percentage: %s | bytes: %d" % (eth_counter, percentage(eth_counter, counter), eth_bytes))
+
+    print "===== Network Layer ====="
+    print("IPv4 \t packets: %d | ipv4/eth percentage: %s | bytes: %d" % (ipv4_counter, percentage(ipv4_counter, eth_counter), ipv4_bytes))
+    print("IPv6 \t packets: %d | ipv6/eth percentage: %s | bytes: %d" % (ipv6_counter, percentage(ipv6_counter, eth_counter), ipv6_bytes))
+    print("ICMP \t packets: %d | icmp/eth percentage: %s | bytes: %d" % (icmp_counter, percentage(icmp_counter, eth_counter), icmp_bytes))
+    print("ARP \t packets: %d | arp/eth percentage: %s | bytes: %d" % (arp_counter, percentage(arp_counter, eth_counter), arp_bytes))
+    print("Other \t packets: %d | other/eth percentage: %s | bytes: %d" % (network_other_counter, percentage(network_other_counter, eth_counter), network_other_bytes))
     
-
-    print "Total number of packets in the pcap file: ", counter
-
-    print "-- Data Link Layer --"
-    print "Total number of eth packets: ", eth_counter
-    print "Total number of arp packets: ", arp_counter
-
-    print "-- Network Layer --"
-    print "Total number of ipv4 packets: ", ipv4_counter
-    print "Total number of ipv6 packets: ", ipv6_counter
-    print "Total number of icmp packets: ", icmp_counter
-    print "Total number of other packets:", network_other_counter
-    
-    print "-- Transport Layer --"
-    print "Total number of tcp packets: ", tcp_counter
-    print "Total number of udp packets: ", udp_counter
-    print "Total number of other packets:", transport_other_counter
-    
-    # total_equal = other_counter + arp_counter
-    # equal = total_equal == not_ip
-    # print("Are protocols Other and not Ethernet/ARP equal? %d vs %d: %s" % (total_equal, not_ip, equal))
-
-    # equal2 = icmp_counter == icmp_counter2
-    # print("Are ICMP counters equal? %d vs %d: %s" % (icmp_counter, icmp_counter2, equal2))
-
+    print "===== Transport Layer ====="
+    print("TCP \t packets: %d | tcp/(ipv4+ipv6) percentage: %s | bytes: %d" % (tcp_counter, percentage(tcp_counter, ipv4_counter+ipv6_counter), tcp_bytes))
+    print("UDP \t packets: %d | udp/(ipv4+ipv6) percentage: %s | bytes: %d" % (udp_counter, percentage(udp_counter, ipv4_counter+ipv6_counter), udp_bytes))
+    print("Other \t packets: % d | other/(ipv4+ipv6) percentage: %s | bytes: %d" % \
+        (transport_other_counter, percentage(transport_other_counter, ipv4_counter+ipv6_counter), transport_other_bytes))
 
 def test():
     """Open up a test pcap file and print out the packets"""
-    with open('univ1_trace/univ1_pt8', 'rb') as f: #univ1_pt8.pcap
+    with open('univ1_trace/univ1_pt8', 'rb') as f:
         pcap = dpkt.pcap.Reader(f)
         print_packets(pcap)
+
+def percentage(x, y):
+    return '{:.6%}'.format(x/float(y))
+
+# Ethernet frame length has to be at least 64 bytes
+def ethLenCheck(b):
+    return b + 18 if b + 18 >= 64 else 64
 
 
 if __name__ == '__main__':
