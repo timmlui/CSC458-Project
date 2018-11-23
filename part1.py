@@ -14,13 +14,12 @@ udp_total = 0
 other_total = 0
 
 # Keep track of headers
-et
 
 # Keep tract of the length
 ipv6_length_list = []
 ipv4_length_list = []
 
-with open('./trace8.csv', mode='r') as csv_file:
+with open('./tracefile8.csv', mode='r') as csv_file:
     csv_reader = csv.DictReader(csv_file)
     line_count = 0
 
@@ -53,6 +52,8 @@ with open('./trace8.csv', mode='r') as csv_file:
 
         if row["Protocol"] == "ICMP" :
           icmp_total += int(row["Length"])
+
+        
         
 
         eth_total += int(row["Length"])
@@ -68,10 +69,10 @@ with open('./trace8.csv', mode='r') as csv_file:
     print(f'Ethernet total : {eth_total}\n ARP total: {arp_total}\n')
     print(f'IPv6 List : {ipv4_length_list}')
 
-sorted_data = np.sort(ipv4_length_list)
-yvals=np.arange(len(sorted_data))/float(len(sorted_data)-1)
-plt.plot(sorted_data,yvals)
-plt.show()
+# sorted_data = np.sort(ipv4_length_list)
+# yvals=np.arange(len(sorted_data))/float(len(sorted_data)-1)
+# plt.plot(sorted_data,yvals)
+# plt.show()
 
-# for q in [5, 25, 50, 75, 90, 100]:
-#   print ("{}%% percentile: {}".format (q, np.percentile(ipv4_length, q)))
+for q in [5, 25, 50, 75, 90, 100]:
+  print ("{}%% percentile: {}".format (q, np.percentile(ipv4_length_list, q)))
