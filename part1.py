@@ -13,6 +13,10 @@ tcp_total = 0
 udp_total = 0
 other_total = 0
 
+# Keep track of headers
+et
+
+# Keep tract of the length
 ipv6_length_list = []
 ipv4_length_list = []
 
