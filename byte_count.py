@@ -62,7 +62,7 @@ with open('./univ1_pt8.csv', mode='r') as csv_file:
         if row["Protocol"] == "TCP" :
             tcp_total += int(row["Length"])
             ports = row["Info"].split()
-            print('Source Port:', ports[0], "Destination Port:", ports[2])
+            # print('Source Port:', ports[0], "Destination Port:", ports[2])
 
             tcp_length_list.append(int(row["Length"]))
         if row["Protocol"] == "UDP" :

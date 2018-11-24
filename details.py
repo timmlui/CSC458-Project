@@ -135,19 +135,19 @@ def print_packets(pcap):
             transport_other_counter += 1
             transport_other_bytes += len(ip.data)
 
-    print "Total number of packets in the trace file: ", counter
+    print("Total number of packets in the trace file: ", counter)
 
-    print "===== Data Link Layer ====="
+    print("===== Data Link Layer =====")
     print("Ethernet \t packets: %d | eth/total percentage: %s | bytes: %d" % (eth_counter, percentage(eth_counter, counter), eth_bytes))
 
-    print "===== Network Layer ====="
+    print("===== Network Layer =====")
     print("IPv4 \t packets: %d | ipv4/eth percentage: %s | bytes: %d" % (ipv4_counter, percentage(ipv4_counter, eth_counter), ipv4_bytes))
     print("IPv6 \t packets: %d | ipv6/eth percentage: %s | bytes: %d" % (ipv6_counter, percentage(ipv6_counter, eth_counter), ipv6_bytes))
     print("ICMP \t packets: %d | icmp/eth percentage: %s | bytes: %d" % (icmp_counter, percentage(icmp_counter, eth_counter), icmp_bytes))
     print("ARP \t packets: %d | arp/eth percentage: %s | bytes: %d" % (arp_counter, percentage(arp_counter, eth_counter), arp_bytes))
     print("Other \t packets: %d | other/eth percentage: %s | bytes: %d" % (network_other_counter, percentage(network_other_counter, eth_counter), network_other_bytes))
     
-    print "===== Transport Layer ====="
+    print("===== Transport Layer =====")
     print("TCP \t packets: %d | tcp/(ipv4+ipv6) percentage: %s | bytes: %d" % (tcp_counter, percentage(tcp_counter, ipv4_counter+ipv6_counter), tcp_bytes))
     print("UDP \t packets: %d | udp/(ipv4+ipv6) percentage: %s | bytes: %d" % (udp_counter, percentage(udp_counter, ipv4_counter+ipv6_counter), udp_bytes))
     print("Other \t packets: % d | other/(ipv4+ipv6) percentage: %s | bytes: %d" % \
@@ -155,7 +155,7 @@ def print_packets(pcap):
 
 def test():
     """Open up a test pcap file and print out the packets"""
-    with open('univ1_trace/univ1_pt8', 'rb') as f:
+    with open('univ1_pt8.pcap', 'rb') as f:
         pcap = dpkt.pcap.Reader(f)
         print_packets(pcap)
 
