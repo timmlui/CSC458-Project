@@ -12,7 +12,8 @@ def first_RTT(R, G) :
   SRTT =  R
   RTTVAR = R/2
   RTO = SRTT + max (G, K * RTTVAR)
+  print("RTO :", RTO, " SRTT :", SRTT, " RTTVAR:", RTTVAR)
 
 
 if __name__ == "__main__" :
-  first_RTT()
+  first_RTT(.5, 1)
