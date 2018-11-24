@@ -18,14 +18,17 @@ protocol_list = ["TCP", "UDP", "IPv4", "ICMPv6", "DHCPv6"]
 
 # Keep track of headers
 
-# Keep tract of the length
+# Create a list of the size of packet for UDP, TCP, IP, Non-IP, and All packets
 ip_length_list = []
 non_ip_length_list = []
 tcp_length_list = []
 udp_length_list = []
 all_length_list = []
 
-with open('./tracefile8.csv', mode='r') as csv_file:
+# Create a list to store the header size
+udp_header_list = []
+
+with open('./univ1_pt8.csv', mode='r') as csv_file:
     csv_reader = csv.DictReader(csv_file)
     line_count = 0
 
@@ -58,14 +61,21 @@ with open('./tracefile8.csv', mode='r') as csv_file:
 
         if row["Protocol"] == "TCP" :
             tcp_total += int(row["Length"])
+            ports = row["Info"].split()
+            # print('Source Port:', ports[0], "Destination Port:", ports[2])
+
             tcp_length_list.append(int(row["Length"]))
         if row["Protocol"] == "UDP" :
             udp_total += int(row["Length"])
+            udp_header_list.append(int(8))
             udp_length_list.append(int(row["Length"]))
 
         if row["Protocol"] not in protocol_list:
             other_total += int(row["Length"])
             non_ip_length_list.append(int(row["Length"]))
+
+
+        #========== Per-Flow Statistics ===========
 
         
         # print(f'Source : {row["Source"]} Dest : {row["Destination"]} Length : {row["Length"]}.')
@@ -90,6 +100,9 @@ with open('./tracefile8.csv', mode='r') as csv_file:
     print("Others total bytes: ", other_total)
 
     #print(f'IPv6 List : {ipv4_length_list}')
+
+
+# ================= Plot CDF ==========================
 
 ip_data = np.sort(ip_length_list)
 yvals_ip =  np.arange(len(ip_data))/float(len(ip_data)-1)
@@ -120,7 +133,6 @@ yvals_udp =  np.arange(len(udp_data))/float(len(udp_data)-1)
 plt.ylabel('Cumulivitive Probability')
 plt.xlabel('The size of UDP packets')
 plt.title("CDF of UDP packets")
-
 plt.plot(udp_data, yvals_udp)
 plt.show()
 
@@ -129,10 +141,16 @@ yvals_all =  np.arange(len(all_data))/float(len(all_data)-1)
 plt.ylabel('Cumulivitive Probability')
 plt.xlabel('The size of All packets')
 plt.title("CDF of All packets")
-
 plt.plot(all_data, yvals_all)
 plt.show()
 
+udp_header = np.sort(udp_header_list)
+yvals_all =  np.arange(len(udp_header))/float(len(udp_header)-1)
+plt.ylabel('Cumulivitive Probability')
+plt.xlabel('The size of UDP header')
+plt.title("CDF of UDP headers")
+plt.plot(udp_header, yvals_all)
+plt.show()
 
-# for q in [5, 25, 50, 75, 90, 100]:
-#   print ("{}%% percentile: {}".format (q, np.percentile(ip_length_list, q)))
+
+
