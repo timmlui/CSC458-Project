@@ -10,6 +10,7 @@ import socket
 from dpkt.compat import compat_ord
 from flow import Flow
 
+TCP_list = []
 all_flows = {}
 TCP_flows = {}
 UDP_flows = {}
@@ -89,13 +90,23 @@ def print_packets(pcap):
     for key in TCP_flows:
         TCP_flows_pkts+=len(TCP_flows[key])
     tcpflowavg = TCP_flows_pkts / len(TCP_flows)
+    for x in TCP_flows :
+        print(x)
+    print('\n')
+    for x in TCP_flows :
+        print(x)
+    print('\n')
+    for x in TCP_flows :
+        print(x)
+    print('\n')
     print("Number of TCP flows: %d | Avg flow length: %d" % (len(TCP_flows), tcpflowavg))
+
     
 
 
 def test():
     """Open up a test pcap file and print out the packets"""
-    with open('univ1_trace/univ1_pt8', 'rb') as f:
+    with open('./univ1_pt8.pcap', 'rb') as f:
         pcap = dpkt.pcap.Reader(f)
         print_packets(pcap)
 

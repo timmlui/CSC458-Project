@@ -28,7 +28,7 @@ all_length_list = []
 # Create a list to store the header size
 udp_header_list = []
 
-with open('./univ1_pt8.csv', mode='r') as csv_file:
+with open('./univ.csv', mode='r') as csv_file:
     csv_reader = csv.DictReader(csv_file)
     line_count = 0
 
