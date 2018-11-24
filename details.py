@@ -3,11 +3,11 @@
 Use DPKT to read in a pcap file and print out the contents of the packets
 This example is focused on the fields in the Ethernet Frame and IP packet
 """
+
 import dpkt
 import datetime
 import socket
 from dpkt.compat import compat_ord
-
 
 def mac_addr(address):
     """Convert a MAC address to a readable/printable string
@@ -37,7 +37,6 @@ def print_packets(pcap):
        Args:
            pcap: dpkt pcap reader object (dpkt.pcap.Reader)
     """
-
     counter=0
 
     eth_counter=0
@@ -67,6 +66,10 @@ def print_packets(pcap):
     transport_other_counter=0
     transport_other_bytes=0
 
+    ip_hdr_list = []
+    tcp_hdr_list = []
+    udp_hdr_list = []
+
     # For each packet in the pcap process the contents
     for timestamp, buf in pcap:
 
@@ -83,10 +86,12 @@ def print_packets(pcap):
             ipv4_counter += 1
             ipv4_bytes += eth.data.len
             eth_bytes += ethLenCheck(eth.data.len)
+            ip_hdr_list.append(20)
         elif eth.type == dpkt.ethernet.ETH_TYPE_IP6:
             ipv6_counter += 1
             ipv6_bytes += len(eth.data)
             eth_bytes += ethLenCheck(len(eth.data))
+            ip_hdr_list.append(40)
         elif eth.type == dpkt.ethernet.ETH_TYPE_ARP:
             arp_counter += 1
             arp_bytes += 64 #fixed size
@@ -128,9 +133,11 @@ def print_packets(pcap):
         if ip.p == dpkt.ip.IP_PROTO_TCP: 
             tcp_counter += 1
             tcp_bytes += ip.len - 40 if ip.len - 40 >= 20 else 0
+            # tcp_hdr_list.append()
         elif ip.p == dpkt.ip.IP_PROTO_UDP:
             udp_counter += 1
             udp_bytes += len(ip.data)
+            udp_hdr_list.append(8)
         else:
             transport_other_counter += 1
             transport_other_bytes += len(ip.data)
