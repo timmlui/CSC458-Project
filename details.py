@@ -4,7 +4,9 @@ Use DPKT to read in a pcap file and print out the contents of the packets
 This example is focused on the fields in the Ethernet Frame and IP packet
 """
 
-import dpkt
+from pcap import Reader
+import dpkt.ethernet
+import dpkt.ip
 import datetime
 import socket
 from dpkt.compat import compat_ord
@@ -71,7 +73,7 @@ def print_packets(pcap):
     udp_hdr_list = []
 
     # For each packet in the pcap process the contents
-    for timestamp, buf in pcap:
+    for timestamp, buf, hdr_len in pcap:
 
         # Total count of packets
         counter+=1
@@ -81,26 +83,22 @@ def print_packets(pcap):
         #print('Ethernet Frame: ', mac_addr(eth.src), mac_addr(eth.dst), eth.type)
 
         eth_counter += 1
+        eth_bytes += hdr_len
 
         if eth.type == dpkt.ethernet.ETH_TYPE_IP:
             ipv4_counter += 1
-            ipv4_bytes += eth.data.len
-            eth_bytes += ethLenCheck(eth.data.len)
-            ip_hdr_list.append(20)
+            #ip_hdr_list.append(20)
         elif eth.type == dpkt.ethernet.ETH_TYPE_IP6:
             ipv6_counter += 1
-            ipv6_bytes += len(eth.data)
-            eth_bytes += ethLenCheck(len(eth.data))
-            ip_hdr_list.append(40)
+            ipv6_bytes += hdr_len
+            #ip_hdr_list.append(40)
         elif eth.type == dpkt.ethernet.ETH_TYPE_ARP:
             arp_counter += 1
-            arp_bytes += 64 #fixed size
-            eth_bytes += 64
+            arp_bytes += hdr_len
             continue
         else:
             network_other_counter += 1
-            network_other_bytes += len(eth.data)
-            eth_bytes += ethLenCheck(len(eth.data))
+            network_other_bytes += hdr_len
             continue
 
         # Make sure the Ethernet data contains an IP packet
@@ -119,7 +117,7 @@ def print_packets(pcap):
         # Now check if this is an ICMP packet
         if isinstance(ip.data, dpkt.icmp.ICMP):
             icmp_counter += 1
-            icmp_bytes += 28 #fixed
+            icmp_bytes += hdr_len
 
         # Pull out fragment information (flags and offset all packed into off field, so use bitmasks)
         # do_not_fragment = bool(ip.off & dpkt.ip.IP_DF)
@@ -132,15 +130,20 @@ def print_packets(pcap):
 
         if ip.p == dpkt.ip.IP_PROTO_TCP: 
             tcp_counter += 1
-            tcp_bytes += ip.len - 40 if ip.len - 40 >= 20 else 0
+            if ip.data.data:
+                tcp_bytes += hdr_len
             # tcp_hdr_list.append()
         elif ip.p == dpkt.ip.IP_PROTO_UDP:
             udp_counter += 1
-            udp_bytes += len(ip.data)
-            udp_hdr_list.append(8)
+            if ip.data.data:
+                udp_bytes += hdr_len
+            # udp_hdr_list.append(8)
         else:
             transport_other_counter += 1
-            transport_other_bytes += len(ip.data)
+            if ip.p == dpkt.ip.IP_PROTO_SCPS or ip.p == dpkt.ip.IP_PROTO_EGP:
+                ipv4_bytes += hdr_len
+            else:
+                transport_other_bytes += hdr_len
 
     print("Total number of packets in the trace file: ", counter)
 
@@ -163,16 +166,11 @@ def print_packets(pcap):
 def test():
     """Open up a test pcap file and print out the packets"""
     with open('univ1_pt8.pcap', 'rb') as f:
-        pcap = dpkt.pcap.Reader(f)
+        pcap = Reader(f)
         print_packets(pcap)
 
 def percentage(x, y):
     return '{:.6%}'.format(x/float(y))
-
-# Ethernet frame length has to be at least 64 bytes
-def ethLenCheck(b):
-    return b + 18 if b + 18 >= 64 else 64
-
 
 if __name__ == '__main__':
     test()
