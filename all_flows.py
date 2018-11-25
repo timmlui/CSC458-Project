@@ -14,10 +14,14 @@ from dpkt.compat import compat_ord
 from flow import Flow
 from packet import Packet
 
-TCP_list = []
+
 all_flows = {}
-TCP_flows = {}
-UDP_flows = {}
+tcp_flows = {}
+udp_flows = {}
+
+all_flow_dur = []
+tcp_flow_dur = []
+udp_flow_dur = []
 
 def mac_addr(address):
     """Convert a MAC address to a readable/printable string
@@ -75,34 +79,47 @@ def print_packets(pcap):
 
         pkt = Packet(timestamp, buf, hdr_len)
 
+        if ip.p == dpkt.ip.IP_PROTO_TCP or ip.p == dpkt.ip.IP_PROTO_UDP: 
+            # all flow
+            flow = Flow(ip.src, ip.dst, ip.data.sport, ip.data.dport, ip.p)
+            if flow not in all_flows:
+                all_flows[flow] = [pkt]
+            else:
+                x = len(all_flows[flow]) - 1
+                if x < 0:
+                    all_flows[flow].append(pkt)
+                else:
+                    if fit_arrival_time(all_flows[flow][x].timestamp, timestamp) <= 5400: #90mins
+                        all_flows[flow].append(pkt)
+
         if ip.p == dpkt.ip.IP_PROTO_TCP: 
             # TCP flow
             flow = Flow(ip.src, ip.dst, ip.data.sport, ip.data.dport, ip.p)
-            if flow not in TCP_flows:
-                TCP_flows[flow] = [pkt]
+            if flow not in tcp_flows:
+                tcp_flows[flow] = [pkt]
             else:
-                x = len(TCP_flows[flow]) - 1
+                x = len(tcp_flows[flow]) - 1
                 if x < 0:
-                    TCP_flows[flow].append(pkt)
+                    tcp_flows[flow].append(pkt)
                 else:
-                    if fit_arrival_time(TCP_flows[flow][x].timestamp, timestamp) <= 5400: #90mins
-                        TCP_flows[flow].append(pkt)
+                    if fit_arrival_time(tcp_flows[flow][x].timestamp, timestamp) <= 5400: #90mins
+                        tcp_flows[flow].append(pkt)
         elif ip.p == dpkt.ip.IP_PROTO_UDP:
             # UDP flow
             flow = Flow(ip.src, ip.dst, ip.data.sport, ip.data.dport, ip.p)
-            if flow not in TCP_flows:
-                UDP_flows[flow] = [pkt]
+            if flow not in tcp_flows:
+                udp_flows[flow] = [pkt]
             else:
-                x = len(UDP_flows[flow]) - 1
+                x = len(udp_flows[flow]) - 1
                 if x < 0:
-                    UDP_flows[flow].append(pkt)
+                    udp_flows[flow].append(pkt)
                 else:
-                    if fit_arrival_time(UDP_flows[flow][x].timestamp, timestamp) <= 5400: #90mins
-                        UDP_flows[flow].append(pkt)
+                    if fit_arrival_time(udp_flows[flow][x].timestamp, timestamp) <= 5400: #90mins
+                        udp_flows[flow].append(pkt)
         else:
             continue
 
-    print("Number of TCP flows: %d | Number of UDP flows: %d" % (len(TCP_flows), len(UDP_flows)))
+    print("Number of All flows: %d | Number of TCP flows: %d | Number of UDP flows: %d" % (len(all_flows), len(tcp_flows), len(udp_flows)))
     
 def fit_arrival_time(timestamp1, timestamp2):
     ts1 = datetime.datetime.utcfromtimestamp(timestamp1)

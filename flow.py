@@ -14,7 +14,7 @@ class Flow:
 
     def __eq__(self, other): 
         # to support both direction flow
-        return self.p == other.p and \
+        return \
             ((self.src_ip == other.src_ip and self.src_port == other.src_port and \
             self.dst_ip == other.dst_ip and self.dst_port == other.dst_port) or \
             (self.src_ip == other.dst_ip and self.src_port == other.dst_port and \
