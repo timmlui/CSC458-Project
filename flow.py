@@ -8,6 +8,7 @@ class Flow:
         self.src_port = src_port
         self.dst_port = dst_port
         self.p = p
+        self.state = None
 
     def __str__(self):
         return str(self.__dict__)
@@ -22,3 +23,11 @@ class Flow:
 
     def __hash__(self):
         return hash((self.src_ip, self.dst_ip, self.src_port, self.dst_port, self.p))
+
+    @property
+    def state(self):
+        return self.state
+
+    @state.setter
+    def state(self, value):
+        self.state = value

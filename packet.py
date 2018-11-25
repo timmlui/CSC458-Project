@@ -5,7 +5,7 @@ class Packet:
     def __init__(self, timestamp, buf, length):
         self.timestamp = timestamp
         self.buf = buf
-        self.len = length
+        self.length = length
 
     def __str__(self):
         return str(self.__dict__)

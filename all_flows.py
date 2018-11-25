@@ -14,6 +14,9 @@ from dpkt.compat import compat_ord
 from flow import Flow
 from packet import Packet
 
+import numpy as np   
+import matplotlib.pyplot as plt
+
 
 all_flows = {}
 tcp_flows = {}
@@ -22,6 +25,19 @@ udp_flows = {}
 all_flow_dur = []
 tcp_flow_dur = []
 udp_flow_dur = []
+
+all_flow_size_pkt = []
+tcp_flow_size_pkt = []
+udp_flow_size_pkt = []
+
+all_flow_size_byte = []
+tcp_flow_size_byte = []
+tcp_flow_size_overhead = []
+udp_flow_size_byte = []
+
+all_flow_time = []
+tcp_flow_time = []
+udp_flow_time = []
 
 def mac_addr(address):
     """Convert a MAC address to a readable/printable string
@@ -89,7 +105,7 @@ def print_packets(pcap):
                 if x < 0:
                     all_flows[flow].append(pkt)
                 else:
-                    if fit_arrival_time(all_flows[flow][x].timestamp, timestamp) <= 5400: #90mins
+                    if time_diff(all_flows[flow][x].timestamp, timestamp) <= 5400: #90mins
                         all_flows[flow].append(pkt)
 
         if ip.p == dpkt.ip.IP_PROTO_TCP: 
@@ -102,30 +118,227 @@ def print_packets(pcap):
                 if x < 0:
                     tcp_flows[flow].append(pkt)
                 else:
-                    if fit_arrival_time(tcp_flows[flow][x].timestamp, timestamp) <= 5400: #90mins
+                    if time_diff(tcp_flows[flow][x].timestamp, timestamp) <= 5400:
                         tcp_flows[flow].append(pkt)
         elif ip.p == dpkt.ip.IP_PROTO_UDP:
             # UDP flow
             flow = Flow(ip.src, ip.dst, ip.data.sport, ip.data.dport, ip.p)
-            if flow not in tcp_flows:
+            if flow not in udp_flows:
                 udp_flows[flow] = [pkt]
             else:
                 x = len(udp_flows[flow]) - 1
                 if x < 0:
                     udp_flows[flow].append(pkt)
                 else:
-                    if fit_arrival_time(udp_flows[flow][x].timestamp, timestamp) <= 5400: #90mins
+                    if time_diff(udp_flows[flow][x].timestamp, timestamp) <= 5400:
                         udp_flows[flow].append(pkt)
         else:
             continue
 
     print("Number of All flows: %d | Number of TCP flows: %d | Number of UDP flows: %d" % (len(all_flows), len(tcp_flows), len(udp_flows)))
+
+    # -- Flow Duration
+    for f in all_flows:
+        size = len(all_flows[f])
+        if size >= 2:
+            all_flow_dur.append(time_diff(all_flows[f][0].timestamp, all_flows[f][size-1].timestamp))
     
-def fit_arrival_time(timestamp1, timestamp2):
+    for f in tcp_flows:
+        size = len(tcp_flows[f])
+        if size >= 2:
+            tcp_flow_dur.append(time_diff(tcp_flows[f][0].timestamp, tcp_flows[f][size-1].timestamp))
+    
+    for f in udp_flows:
+        size = len(udp_flows[f])
+        if size >= 2:
+            udp_flow_dur.append(time_diff(udp_flows[f][0].timestamp, udp_flows[f][size-1].timestamp))
+
+    print "lens: ", len(all_flow_dur), len(tcp_flow_dur), len(udp_flow_dur)
+
+    # -- Flow Size
+    for f in all_flows:
+        f_bytes = 0
+        size = len(all_flows[f])
+        all_flow_size_pkt.append(size)
+        for p in all_flows[f]:
+            f_bytes += p.length
+        all_flow_size_byte.append(f_bytes)
+    
+    for f in tcp_flows:
+        f_bytes = 0
+        f_overhead = 0
+        size = len(tcp_flows[f])
+        tcp_flow_size_pkt.append(size)
+        for p in tcp_flows[f]:
+            f_bytes += p.length
+            f_overhead += 18 + 20 #+ tcp_hdr
+        tcp_flow_size_byte.append(f_bytes)
+        if f_bytes == 0:
+            f_bytes = 9999
+        tcp_flow_size_overhead.append(f_overhead/float(f_bytes))
+    
+    for f in udp_flows:
+        f_bytes = 0
+        size = len(udp_flows[f])
+        udp_flow_size_pkt.append(size)
+        for p in udp_flows[f]:
+            f_bytes += p.length
+        udp_flow_size_byte.append(f_bytes)
+
+    print "all lens: ", len(all_flow_size_pkt), len(all_flow_size_byte)
+    print "tcp lens: ", len(tcp_flow_size_pkt), len(tcp_flow_size_byte)
+    print "udp lens: ", len(udp_flow_size_pkt), len(udp_flow_size_byte)
+
+    # -- Inter-packet Arrival time
+    for f in all_flows:
+        for i in range(len(all_flows[f])-1):
+            all_flow_time.append(time_diff(all_flows[f][i].timestamp, all_flows[f][i+1].timestamp))
+
+    for f in tcp_flows:
+        for i in range(len(tcp_flows[f])-1):
+            tcp_flow_time.append(time_diff(tcp_flows[f][i].timestamp, tcp_flows[f][i+1].timestamp))
+
+    for f in udp_flows:
+        for i in range(len(udp_flows[f])-1):
+            udp_flow_time.append(time_diff(udp_flows[f][i].timestamp, udp_flows[f][i+1].timestamp))
+
+    # -- TCP State
+    for f in tcp_flows:
+        size = len(tcp_flows[f])
+        last_pkt = tcp_flows[f][size-1]
+        tcp = dpkt.ethernet.Ethernet(last_pkt.buf).data.data
+        
+        if (tcp.flags & dpkt.tcp.TH_SYN) != 0:
+            f.state = 'Request'
+        elif (tcp.flags & dpkt.tcp.TH_RST) != 0:
+            f.state = 'Reset'
+        elif (tcp.flags & dpkt.tcp.TH_FIN) != 0 and (tcp.flags & dpkt.tcp.TH_ACK) != 0:
+            f.state = 'Finished'
+        elif time_diff(tcp_flows[f][0].timestamp, tcp_flows[f][size-1].timestamp) <= 300:
+            f.state = 'Ongoing'
+        elif time_diff(tcp_flows[f][0].timestamp, tcp_flows[f][size-1].timestamp) > 300 \
+            and (tcp.flags & dpkt.tcp.TH_RST) == 0 and (tcp.flags & dpkt.tcp.TH_FIN) == 0:
+            f.state = 'Failed'
+
+    show_cdf_graphs()
+    
+
+# === CDF Plot Graphs ===
+
+def show_cdf_graphs():
+    # Flow Duration - All Flow
+    all_flow_dur_data = np.sort(all_flow_dur)
+    yvals_all =  np.arange(len(all_flow_dur_data))/float(len(all_flow_dur_data)-1)
+    plt.ylabel('Cumulivitive Probability')
+    plt.xlabel('All flow duration')
+    plt.title("CDF of All Flow - Flow Duration")
+    plt.plot(all_flow_dur_data, yvals_all)
+    plt.show()
+    # Flow Duration - TCP Flow
+    tcp_flow_dur_data = np.sort(tcp_flow_dur)
+    yvals_tcp =  np.arange(len(tcp_flow_dur_data))/float(len(tcp_flow_dur_data)-1)
+    plt.ylabel('Cumulivitive Probability')
+    plt.xlabel('TCP flow duration')
+    plt.title("CDF of TCP Flow - Flow Duration")
+    plt.plot(tcp_flow_dur_data, yvals_tcp)
+    plt.show()
+    # Flow Duration - UDP Flow
+    udp_flow_dur_data = np.sort(udp_flow_dur)
+    yvals_udp =  np.arange(len(udp_flow_dur_data))/float(len(udp_flow_dur_data)-1)
+    plt.ylabel('Cumulivitive Probability')
+    plt.xlabel('UDP flow duration')
+    plt.title("CDF of UDP Flow - Flow Duration")
+    plt.plot(udp_flow_dur_data, yvals_udp)
+    plt.show()
+
+    # Flow Size: Packet - All Flow
+    all_flow_size_data = np.sort(all_flow_size_pkt)
+    yvals_all =  np.arange(len(all_flow_size_data))/float(len(all_flow_size_data)-1)
+    plt.ylabel('Cumulivitive Probability')
+    plt.xlabel('All flow size - packets')
+    plt.title("CDF of All Flow - Flow Size: Packets")
+    plt.plot(all_flow_size_data, yvals_all)
+    plt.show()
+    # Flow Size: Packet - TCP Flow
+    tcp_flow_size_data = np.sort(tcp_flow_size_pkt)
+    yvals_tcp =  np.arange(len(tcp_flow_size_data))/float(len(tcp_flow_size_data)-1)
+    plt.ylabel('Cumulivitive Probability')
+    plt.xlabel('TCP flow size - packets')
+    plt.title("CDF of TCP Flow - Flow Size: Packets")
+    plt.plot(tcp_flow_size_data, yvals_tcp)
+    plt.show()
+    # Flow Size: Packet - UDP Flow
+    udp_flow_size_data = np.sort(udp_flow_size_pkt)
+    yvals_udp =  np.arange(len(udp_flow_size_data))/float(len(udp_flow_size_data)-1)
+    plt.ylabel('Cumulivitive Probability')
+    plt.xlabel('UDP flow size - packets')
+    plt.title("CDF of UDP Flow - Flow Size: Packets")
+    plt.plot(udp_flow_size_data, yvals_udp)
+    plt.show()
+
+    # Flow Size: Bytes - All Flow
+    all_flow_sizeb_data = np.sort(all_flow_size_byte)
+    yvals_all =  np.arange(len(all_flow_sizeb_data))/float(len(all_flow_sizeb_data)-1)
+    plt.ylabel('Cumulivitive Probability')
+    plt.xlabel('All flow size - bytes')
+    plt.title("CDF of All Flow - Flow Size: Bytes")
+    plt.plot(all_flow_sizeb_data, yvals_all)
+    plt.show()
+    # Flow Size: Bytes - TCP Flow
+    tcp_flow_sizeb_data = np.sort(tcp_flow_size_byte)
+    yvals_tcp =  np.arange(len(tcp_flow_sizeb_data))/float(len(tcp_flow_sizeb_data)-1)
+    plt.ylabel('Cumulivitive Probability')
+    plt.xlabel('TCP flow size - bytes')
+    plt.title("CDF of TCP Flow - Flow Size: Bytes")
+    plt.plot(tcp_flow_sizeb_data, yvals_tcp)
+    plt.show()
+    # Flow Size: Bytes - UDP Flow
+    udp_flow_sizeb_data = np.sort(udp_flow_size_byte)
+    yvals_udp =  np.arange(len(udp_flow_sizeb_data))/float(len(udp_flow_sizeb_data)-1)
+    plt.ylabel('Cumulivitive Probability')
+    plt.xlabel('UDP flow size - bytes')
+    plt.title("CDF of UDP Flow - Flow Size: Bytes")
+    plt.plot(udp_flow_sizeb_data, yvals_udp)
+    plt.show()
+
+    # TCP Flow Size: Overhead ratio 
+    tcp_flow_overhead_data = np.sort(tcp_flow_size_overhead)
+    yvals_tcp =  np.arange(len(tcp_flow_overhead_data))/float(len(tcp_flow_overhead_data)-1)
+    plt.ylabel('Cumulivitive Probability')
+    plt.xlabel('TCP flow size - overhead ratio')
+    plt.title("CDF of TCP Flow - Overhead Ratio")
+    plt.plot(tcp_flow_overhead_data, yvals_tcp)
+    plt.show()
+
+    # Flow Inter-Packet Arrival Time - All Flow
+    all_flow_time_data = np.sort(all_flow_time)
+    yvals_all =  np.arange(len(all_flow_time_data))/float(len(all_flow_time_data)-1)
+    plt.ylabel('Cumulivitive Probability')
+    plt.xlabel('All flow time')
+    plt.title("CDF of All Flow - Inter-Packet Arrival Time")
+    plt.plot(all_flow_time_data, yvals_all)
+    plt.show()
+    # Flow Inter-Packet Arrival Time - TCP Flow
+    tcp_flow_time_data = np.sort(tcp_flow_time)
+    yvals_all =  np.arange(len(tcp_flow_time_data))/float(len(tcp_flow_time_data)-1)
+    plt.ylabel('Cumulivitive Probability')
+    plt.xlabel('TCP flow time')
+    plt.title("CDF of TCP Flow - Inter-Packet Arrival Time")
+    plt.plot(tcp_flow_time_data, yvals_all)
+    plt.show()
+    # Flow Inter-Packet Arrival Time - UDP Flow
+    udp_flow_time_data = np.sort(udp_flow_time)
+    yvals_all =  np.arange(len(udp_flow_time_data))/float(len(udp_flow_time_data)-1)
+    plt.ylabel('Cumulivitive Probability')
+    plt.xlabel('UDP flow time')
+    plt.title("CDF of UDP Flow - Inter-Packet Arrival Time")
+    plt.plot(udp_flow_time_data, yvals_all)
+    plt.show()
+
+def time_diff(timestamp1, timestamp2):
     ts1 = datetime.datetime.utcfromtimestamp(timestamp1)
     ts2 = datetime.datetime.utcfromtimestamp(timestamp2)
     return (ts2 - ts1).total_seconds()
-
 
 def test():
     """Open up a test pcap file and print out the packets"""
