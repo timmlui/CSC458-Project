@@ -14,6 +14,7 @@ from dpkt.compat import compat_ord
 from flow import Flow
 from packet import Packet
 
+TCP_list = []
 all_flows = {}
 TCP_flows = {}
 UDP_flows = {}
