@@ -63,27 +63,6 @@ def subsequent_RTT(R1) :
   if RTO < 1 :
     RTO = 1
 
-# def write_pcap():
-#     # Open a file to store our capture
-#     f = open("this.pcap", "a+")
-#     writer = dpkt.pcap.Writer(f)
- 
-#     while True:
-#         dpkt.pcap.Writer.writepkt(pkt, ts)
-         
-#         # Start analyzing our packet
-#         eth_packet = dpkt.ethernet.Ethernet(packet)
- 
-#         # Print packets to screen
-#         print repr(eth_packet)
-         
-#         writer.writepkt(packet)
-         
-#         f.flush()
-         
-#     f.close()
-
-
 
 
 if __name__ == "__main__" :

@@ -22,6 +22,7 @@ import operator
 all_flows = {}
 tcp_flows = {}
 udp_flows = {}
+tcp_host_pairs = {}
 
 all_flow_dur = []
 tcp_flow_dur = []
@@ -121,6 +122,7 @@ def print_packets(pcap):
                 else:
                     if time_diff(tcp_flows[flow][x].timestamp, timestamp) <= 5400:
                         tcp_flows[flow].append(pkt)
+            all_host_pairs(pkt, ip)
         elif ip.p == dpkt.ip.IP_PROTO_UDP:
             # UDP flow
             flow = Flow(ip.src, ip.dst, ip.data.sport, ip.data.dport, ip.p)
@@ -217,7 +219,7 @@ def print_packets(pcap):
             and (tcp.flags & dpkt.tcp.TH_RST) == 0 and (tcp.flags & dpkt.tcp.TH_FIN) == 0:
             f.state = 'Failed'
 
-    # show_cdf_graphs()
+    show_cdf_graphs()
     
 
 # === CDF Plot Graphs ===
@@ -337,6 +339,7 @@ def time_diff(timestamp1, timestamp2):
     ts2 = datetime.datetime.utcfromtimestamp(timestamp2)
     return (ts2 - ts1).total_seconds()
 
+# -- RTT - Three top 3 TCP flows
 def top_flows():
     top_flows1 = []
     top_flows2 = []
@@ -367,12 +370,36 @@ def top_flows():
 
     return [top_flows1, top_flows2, top_flows3]
 
+# -- RTT - Host pairs
+def all_host_pairs(pkt, ip):
+    flow = Flow(ip.src, ip.dst, ip.data.sport, ip.data.dport, ip.p)
+    if flow not in tcp_host_pairs:
+        tcp_host_pairs[flow] = [pkt]
+    else:
+        x = len(tcp_host_pairs[flow]) - 1
+        if x < 0:
+            tcp_host_pairs[flow].append(pkt)
+        else:
+            if time_diff(tcp_host_pairs[flow][x].timestamp, pkt.timestamp) <= 5400:
+                tcp_host_pairs[flow].append(pkt)
+
+def host_pairs():
+    top_3_pairs = []
+    sorted_tcp_flow_pkt = sorted(tcp_host_pairs, key=lambda k: len(tcp_host_pairs[k]), reverse = True)
+    top_3_pairs.append((sorted_tcp_flow_pkt[0], tcp_host_pairs[sorted_tcp_flow_pkt[0]]))
+    top_3_pairs.append((sorted_tcp_flow_pkt[2], tcp_host_pairs[sorted_tcp_flow_pkt[2]]))
+    top_3_pairs.append((sorted_tcp_flow_pkt[4], tcp_host_pairs[sorted_tcp_flow_pkt[4]]))
+
+    for flow in top_3_pairs:
+        print "tcp pkt: ", inet_to_str(flow[0].src_ip), inet_to_str(flow[0].dst_ip), flow[0].src_port, flow[0].dst_port
+
 def test():
     """Open up a test pcap file and print out the packets"""
     with open('univ1_pt8.pcap', 'rb') as f: #univ1_trace/univ1_pt8
         pcap = Reader(f)
         print_packets(pcap)
-        top_flows()
+        # top_flows()
+        host_pairs()
 
 
 if __name__ == '__main__':

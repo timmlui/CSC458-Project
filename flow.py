@@ -23,6 +23,10 @@ class Flow:
     def __hash__(self):
         return hash((self.src_ip, self.dst_ip, self.src_port, self.dst_port, self.p))
 
+    def eq2(self, other):
+        return ((self.src_ip == other.src_ip and self.dst_ip == other.dst_ip) or \
+            (self.src_ip == other.dst_ip and self.dst_ip == other.src_ip))
+
     @property
     def state(self):
         return self.state
