@@ -31,3 +31,19 @@ class Flow:
     @state.setter
     def state(self, value):
         self.state = value
+
+    @property
+    def total_bytes(self):
+        return self.total_bytes
+
+    @total_bytes.setter
+    def total_bytes(self, value):
+        self.total_bytes = value
+
+    @property
+    def duration(self):
+        return self.duration
+
+    @duration.setter
+    def duration(self, value):
+        self.duration = value

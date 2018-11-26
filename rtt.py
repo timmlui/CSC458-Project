@@ -1,3 +1,7 @@
+
+import all_flows
+
+
 SRTT = 0
 RTTVAR = 0
 RTO = 1
@@ -57,4 +61,7 @@ if __name__ == "__main__" :
   print("RTO :", RTO, " SRTT :", SRTT, " RTTVAR:", RTTVAR)
   subsequent_RTT(.001)
   print("Sub RTO :", RTO, " SRTT :", SRTT, " RTTVAR:", RTTVAR)
+
+  all_flows.test()
+  print "test: ", all_flows.top_flows()[0], all_flows.top_flows()[1], all_flows.top_flows()[2]
 

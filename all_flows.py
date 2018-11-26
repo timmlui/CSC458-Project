@@ -16,6 +16,7 @@ from packet import Packet
 
 import numpy as np   
 import matplotlib.pyplot as plt
+import operator
 
 
 all_flows = {}
@@ -185,10 +186,6 @@ def print_packets(pcap):
             f_bytes += p.length
         udp_flow_size_byte.append(f_bytes)
 
-    print "all lens: ", len(all_flow_size_pkt), len(all_flow_size_byte)
-    print "tcp lens: ", len(tcp_flow_size_pkt), len(tcp_flow_size_byte)
-    print "udp lens: ", len(udp_flow_size_pkt), len(udp_flow_size_byte)
-
     # -- Inter-packet Arrival time
     for f in all_flows:
         for i in range(len(all_flows[f])-1):
@@ -220,7 +217,7 @@ def print_packets(pcap):
             and (tcp.flags & dpkt.tcp.TH_RST) == 0 and (tcp.flags & dpkt.tcp.TH_FIN) == 0:
             f.state = 'Failed'
 
-    show_cdf_graphs()
+    # show_cdf_graphs()
     
 
 # === CDF Plot Graphs ===
@@ -339,6 +336,36 @@ def time_diff(timestamp1, timestamp2):
     ts1 = datetime.datetime.utcfromtimestamp(timestamp1)
     ts2 = datetime.datetime.utcfromtimestamp(timestamp2)
     return (ts2 - ts1).total_seconds()
+
+def top_flows():
+    top_flows1 = []
+    top_flows2 = []
+    top_flows3 = []
+    
+    sorted_tcp_flow_pkt = sorted(tcp_flows, key=tcp_flows.get)
+    top_flows1.append(sorted_tcp_flow_pkt[0])
+    top_flows1.append(sorted_tcp_flow_pkt[1])
+    top_flows1.append(sorted_tcp_flow_pkt[2])
+
+    for f in tcp_flows:
+        f.total_bytes = 0
+        f.duration = 0
+        for p in tcp_flows[f]:
+            f.total_bytes += p.length
+            size = len(tcp_flows[f])
+            f.duration += time_diff(tcp_flows[f][0].timestamp, tcp_flows[f][size-1].timestamp)
+
+    sorted_tcp_flow_byte = sorted(tcp_flows, key=operator.attrgetter('total_bytes'), reverse=True)
+    top_flows2.append(sorted_tcp_flow_byte[0])
+    top_flows2.append(sorted_tcp_flow_byte[1])
+    top_flows2.append(sorted_tcp_flow_byte[2])
+
+    sorted_tcp_flow_dur = sorted(tcp_flows, key=operator.attrgetter('duration'), reverse=True)
+    top_flows3.append(sorted_tcp_flow_dur[0])
+    top_flows3.append(sorted_tcp_flow_dur[1])
+    top_flows3.append(sorted_tcp_flow_dur[2])
+
+    return [top_flows1, top_flows2, top_flows3]
 
 def test():
     """Open up a test pcap file and print out the packets"""

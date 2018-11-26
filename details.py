@@ -11,6 +11,13 @@ import datetime
 import socket
 from dpkt.compat import compat_ord
 
+import numpy as np   
+import matplotlib.pyplot as plt
+
+ip_hdr_list = []
+tcp_hdr_list = []
+udp_hdr_list = []
+
 def mac_addr(address):
     """Convert a MAC address to a readable/printable string
        Args:
@@ -68,10 +75,6 @@ def print_packets(pcap):
     transport_other_counter=0
     transport_other_bytes=0
 
-    ip_hdr_list = []
-    tcp_hdr_list = []
-    udp_hdr_list = []
-
     # For each packet in the pcap process the contents
     for timestamp, buf, hdr_len in pcap:
 
@@ -87,11 +90,11 @@ def print_packets(pcap):
 
         if eth.type == dpkt.ethernet.ETH_TYPE_IP:
             ipv4_counter += 1
-            #ip_hdr_list.append(20)
+            ip_hdr_list.append(20)
         elif eth.type == dpkt.ethernet.ETH_TYPE_IP6:
             ipv6_counter += 1
             ipv6_bytes += hdr_len
-            #ip_hdr_list.append(40)
+            ip_hdr_list.append(40)
         elif eth.type == dpkt.ethernet.ETH_TYPE_ARP:
             arp_counter += 1
             arp_bytes += hdr_len
@@ -132,12 +135,16 @@ def print_packets(pcap):
             tcp_counter += 1
             if ip.data.data:
                 tcp_bytes += hdr_len
-            # tcp_hdr_list.append()
+            tcp_hdr = hdr_len - 18 - 20 - len(ip.data.data)
+            if tcp_hdr <= 20:
+                tcp_hdr_list.append(20)
+            else:
+                tcp_hdr_list.append(tcp_hdr)
         elif ip.p == dpkt.ip.IP_PROTO_UDP:
             udp_counter += 1
             if ip.data.data:
                 udp_bytes += hdr_len
-            # udp_hdr_list.append(8)
+            udp_hdr_list.append(8)
         else:
             transport_other_counter += 1
             if ip.p == dpkt.ip.IP_PROTO_SCPS or ip.p == dpkt.ip.IP_PROTO_EGP:
@@ -162,6 +169,34 @@ def print_packets(pcap):
     print("UDP \t packets: %d | udp/(ipv4+ipv6) percentage: %s | bytes: %d" % (udp_counter, percentage(udp_counter, ipv4_counter+ipv6_counter), udp_bytes))
     print("Other \t packets: % d | other/(ipv4+ipv6) percentage: %s | bytes: %d" % \
         (transport_other_counter, percentage(transport_other_counter, ipv4_counter+ipv6_counter), transport_other_bytes))
+
+    show_cdf_graphs()
+
+def show_cdf_graphs():
+    # IP Hdr
+    ip_hdr_data = np.sort(ip_hdr_list)
+    yvals_all =  np.arange(len(ip_hdr_data))/float(len(ip_hdr_data)-1)
+    plt.ylabel('Cumulivitive Probability')
+    plt.xlabel('IP hdr size')
+    plt.title("CDF of IP Hdr Size")
+    plt.plot(ip_hdr_data, yvals_all)
+    plt.show()
+    # TCP Hdr
+    tcp_hdr_data = np.sort(tcp_hdr_list)
+    yvals_all =  np.arange(len(tcp_hdr_data))/float(len(tcp_hdr_data)-1)
+    plt.ylabel('Cumulivitive Probability')
+    plt.xlabel('TCP hdr size')
+    plt.title("CDF of TCP Hdr Size")
+    plt.plot(tcp_hdr_data, yvals_all)
+    plt.show()
+    # UDP Hdr
+    udp_hdr_data = np.sort(udp_hdr_list)
+    yvals_all =  np.arange(len(udp_hdr_data))/float(len(udp_hdr_data)-1)
+    plt.ylabel('Cumulivitive Probability')
+    plt.xlabel('UDP hdr size')
+    plt.title("CDF of UDP Hdr Size")
+    plt.plot(udp_hdr_data, yvals_all)
+    plt.show()
 
 def test():
     """Open up a test pcap file and print out the packets"""
