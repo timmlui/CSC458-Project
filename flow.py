@@ -16,10 +16,9 @@ class Flow:
     def __eq__(self, other): 
         # to support both direction flow
         return \
-            ((self.src_ip == other.src_ip and self.src_port == other.src_port and \
-            self.dst_ip == other.dst_ip and self.dst_port == other.dst_port) or \
-            (self.src_ip == other.dst_ip and self.src_port == other.dst_port and \
-            self.dst_ip == other.src_ip and self.dst_port == other.src_port))
+            ((self.src_ip == other.src_ip and self.dst_ip == other.dst_ip) or \
+            (self.src_ip == other.dst_ip and self.dst_ip == other.src_ip)) and \
+            self.src_port == other.src_port and self.dst_port == other.dst_port
 
     def __hash__(self):
         return hash((self.src_ip, self.dst_ip, self.src_port, self.dst_port, self.p))

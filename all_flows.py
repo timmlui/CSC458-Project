@@ -342,7 +342,7 @@ def top_flows():
     top_flows2 = []
     top_flows3 = []
     
-    sorted_tcp_flow_pkt = sorted(tcp_flows, key=tcp_flows.get)
+    sorted_tcp_flow_pkt = sorted(tcp_flows, key=lambda k: len(tcp_flows[k]), reverse = True)
     top_flows1.append((sorted_tcp_flow_pkt[0], tcp_flows[sorted_tcp_flow_pkt[0]]))
     top_flows1.append((sorted_tcp_flow_pkt[1], tcp_flows[sorted_tcp_flow_pkt[1]]))
     top_flows1.append((sorted_tcp_flow_pkt[2], tcp_flows[sorted_tcp_flow_pkt[2]]))
@@ -372,6 +372,7 @@ def test():
     with open('univ1_pt8.pcap', 'rb') as f: #univ1_trace/univ1_pt8
         pcap = Reader(f)
         print_packets(pcap)
+        top_flows()
 
 
 if __name__ == '__main__':
