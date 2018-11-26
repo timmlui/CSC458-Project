@@ -343,9 +343,9 @@ def top_flows():
     top_flows3 = []
     
     sorted_tcp_flow_pkt = sorted(tcp_flows, key=tcp_flows.get)
-    top_flows1.append(sorted_tcp_flow_pkt[0])
-    top_flows1.append(sorted_tcp_flow_pkt[1])
-    top_flows1.append(sorted_tcp_flow_pkt[2])
+    top_flows1.append((sorted_tcp_flow_pkt[0], tcp_flows[sorted_tcp_flow_pkt[0]]))
+    top_flows1.append((sorted_tcp_flow_pkt[1], tcp_flows[sorted_tcp_flow_pkt[1]]))
+    top_flows1.append((sorted_tcp_flow_pkt[2], tcp_flows[sorted_tcp_flow_pkt[2]]))
 
     for f in tcp_flows:
         f.total_bytes = 0
@@ -356,14 +356,14 @@ def top_flows():
             f.duration += time_diff(tcp_flows[f][0].timestamp, tcp_flows[f][size-1].timestamp)
 
     sorted_tcp_flow_byte = sorted(tcp_flows, key=operator.attrgetter('total_bytes'), reverse=True)
-    top_flows2.append(sorted_tcp_flow_byte[0])
-    top_flows2.append(sorted_tcp_flow_byte[1])
-    top_flows2.append(sorted_tcp_flow_byte[2])
+    top_flows2.append((sorted_tcp_flow_byte[0], tcp_flows[sorted_tcp_flow_byte[0]]))
+    top_flows2.append((sorted_tcp_flow_byte[1], tcp_flows[sorted_tcp_flow_byte[1]]))
+    top_flows2.append((sorted_tcp_flow_byte[2], tcp_flows[sorted_tcp_flow_byte[2]]))
 
     sorted_tcp_flow_dur = sorted(tcp_flows, key=operator.attrgetter('duration'), reverse=True)
-    top_flows3.append(sorted_tcp_flow_dur[0])
-    top_flows3.append(sorted_tcp_flow_dur[1])
-    top_flows3.append(sorted_tcp_flow_dur[2])
+    top_flows3.append((sorted_tcp_flow_dur[0], tcp_flows[sorted_tcp_flow_dur[0]]))
+    top_flows3.append((sorted_tcp_flow_dur[1], tcp_flows[sorted_tcp_flow_dur[1]]))
+    top_flows3.append((sorted_tcp_flow_dur[2], tcp_flows[sorted_tcp_flow_dur[2]]))
 
     return [top_flows1, top_flows2, top_flows3]
 

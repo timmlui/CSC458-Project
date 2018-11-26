@@ -10,6 +10,9 @@ alpha = 1/8
 beta = 1/4
 G = 1
 
+top_flows1 = []
+top_flows2 = []
+top_flows3 = []
 
 def first_RTT(R) :
   """
@@ -46,13 +49,8 @@ def subsequent_RTT(R1) :
   if RTO < 1 :
     RTO = 1
 
-# def manage_RTO_timer() :
-#   """
-#   An implementation MUST manage the retransmission timer(s) in such a
-#    way that a segment is never retransmitted too early, i.e., less than
-#    one RTO after the previous transmission of that segment.
-#   """
-
+# def sample_RTT():
+#   for f top_flows1
 
 
 
@@ -63,5 +61,9 @@ if __name__ == "__main__" :
   print("Sub RTO :", RTO, " SRTT :", SRTT, " RTTVAR:", RTTVAR)
 
   all_flows.test()
-  print "test: ", all_flows.top_flows()[0], all_flows.top_flows()[1], all_flows.top_flows()[2]
+  top_flows1 = all_flows.top_flows()[0]
+  top_flows2 = all_flows.top_flows()[1]
+  top_flows3 = all_flows.top_flows()[2]
+
+  print "test: ", top_flows1, top_flows2, top_flows3
 
